@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Sprite Runner</title>
+    <style type="text/css">
+      #sprite {
+
+      }
+
+      .btn {
+        width: 64px;
+        height: 64px;
+        border: 1px solid black;
+        display: inline-table;
+      }
+
+      hr {
+        padding: 10px;
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="sprite"></div>
+    <div id="currentFrame"></div>
+    <div id="intervalTime"></div>
+    <hr>
+
+    <div class="btn">Q<br>&nbsp; Flip H</div>
+    <div class="btn">W<br>&nbsp; slower</div>
+    <div class="btn">E<br>&nbsp; &gt; / ||</div>
+    <div class="btn">R<br>&nbsp; Flip V</div><br/>
+    <div class="btn">A<br>&nbsp; |&lt;</div>
+    <div class="btn">S<br>&nbsp; faster</div>
+    <div class="btn">D<br>&nbsp; &gt;|</div>
+
+    <hr>
+
+    <div><pre>Usage:
+    http://localhost:8000/spriterunner.html?file=out.png&amp;height=128
+
+    Change your image and then reload.
+
+    Will save to localStorage:
+    - if flipped horizontally and/or vertically
+    - the current frame
+    - the current interval time
+
+    arguments:
+    - file=[filepath]
+    - height=[frame height in pixels]
+
+    optional:
+    - width=[frame width in pixels, default to height]
+    - bgcolor=[format: rrggbb (like hex), defaults to browser default]
+
+    Bonus:
+
+    Use imagemagick montage with fswatch to automatically create the spritesheet from separate images, like so:
+    fswatch -0 -o . | xargs -0 -n 1 -I {} montage -background none -geometry +0+0 my_animation_* out.png
+
+    Use symbolic link to your file instead of putting it in the correct path for spriterunner/your serving solution.
+
+    </pre></div>
+    
+    <script type="text/javascript">
+
+      var flipH
+
+      document.body.onload = function () {
+
+        var queries = location.search.split('?')[1].split('&')
+
+        var queryParams = {}
+
+        for (var i = 0; i < queries.length; i++) {
+          var queryParts = queries[i].split('=')
+          var key = queryParts[0]
+          var value = queryParts[1]
+          queryParams[key] = value
+        }
+
+        var startFrame = 0
+        var currentFrame = parseInt(localStorage.currentFrame) || 0
+        var endFrame = queryParams.endframe
+        var spriteDiv = document.getElementById('sprite')
+        var frameHeight = queryParams.height
+        var frameWidth = queryParams.width || frameHeight
+        var fileName = queryParams.file
+        var bgColor = queryParams.bgcolor
+        var imageWidth
+        var imageHeight
+        var columns
+        var intervalId
+        var intervalTime = parseInt(localStorage.intervalTime) || 120
+        var scaleX = parseInt(localStorage.scaleX) || 1
+        var scaleY = parseInt(localStorage.scaleY) || 1
+
+        var image = new Image()
+        image.onload = function() {
+          imageWidth = this.width
+          imageHeight = this.height
+
+          sprite.style.backgroundImage = 'url(' + fileName + ')'
+          sprite.style.width = frameWidth + 'px'
+          sprite.style.height = frameHeight + 'px'
+          sprite.style.transform = 'scale(' + scaleX + ', ' + scaleY + ')'
+
+          if (queryParams.bgcolor) {
+            document.body.style.backgroundColor = '#' + bgColor
+          }
+
+          if (!queryParams.endframe) {
+            endFrame = ((imageWidth / frameWidth) * (imageHeight / frameHeight)) - 1
+          }
+
+          columns = imageWidth / frameWidth
+
+          columnMaxIndex = columns - 1
+
+          console.log('imageWidth', imageWidth)
+          console.log('imageHeight', imageHeight)
+          console.log('frameWidth', frameWidth)
+          console.log('frameHeight', frameHeight)
+          console.log('startFrame', startFrame)
+          console.log('endFrame', endFrame)
+          console.log('currentFrame', currentFrame)
+          console.log('columns', columns)
+          console.log('columnMaxIndex', columnMaxIndex)
+          console.log('bgColor', bgColor)
+
+          update()
+        }
+
+        image.src = fileName
+
+        document.addEventListener('keypress', function (event) {
+          if (event.key === 'd') {
+            currentFrame++
+            update()
+
+          } else if (event.key === 'a') {
+            currentFrame--
+            update()
+
+          } else if (event.key === 'e') {
+            if (intervalId) {
+              clearInterval(intervalId)
+              intervalId = null
+            } else {
+              startInterval()
+            }
+
+          } else if (event.key === 'w') {
+            intervalTime += 10
+            startInterval()
+
+          } else if (event.key === 's') {
+            intervalTime -= 10
+            startInterval()
+
+          } else if (event.key === 'q') {
+            flipH()
+
+          } else if (event.key === 'r') {
+            flipV()
+          }
+        })
+
+        function startInterval() {
+          if (intervalId) {
+            clearInterval(intervalId)
+            intervalId = null
+          }
+          intervalId = setInterval(function () {
+            currentFrame++
+            update()
+          }, intervalTime)
+
+          localStorage.intervalTime = intervalTime
+        }
+
+        function update() {
+          if (currentFrame < 0) {
+            currentFrame = endFrame
+          } else if (currentFrame > endFrame) {
+            currentFrame = startFrame
+          }
+
+          localStorage.currentFrame = currentFrame
+
+          var newX = currentFrame % columns
+          var newY = Math.floor(currentFrame / columns)
+
+          sprite.style.backgroundPosition = (newX * frameWidth) + 'px ' + (newY * frameHeight) + 'px'
+
+          sprite.style.transform = 'scale(' + scaleX + ', ' + scaleY + ')'
+
+          document.getElementById('currentFrame').innerText = 'frame: ' + currentFrame
+          document.getElementById('intervalTime').innerText = 'interval: ' + intervalTime + ' ms'
+        }
+
+        flipH = function () {
+          if (scaleX === -1) {
+            scaleX = 1
+          } else {
+            scaleX = -1
+          }
+
+          localStorage.scaleX = scaleX
+
+          update()
+        }
+
+        flipV = function () {
+          if (scaleY === -1) {
+            scaleY = 1
+          } else {
+            scaleY = -1
+          }
+
+          localStorage.scaleY = scaleY
+
+          update()
+        }
+      }
+    </script>
+  </body>
+</html>
