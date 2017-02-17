@@ -21,7 +21,7 @@
 
     <div id="sprite"></div>
     <hr>
-    
+
     <div id="currentFrame"></div>
     <div id="intervalTime"></div>
     <hr>
@@ -33,6 +33,7 @@
     <div class="btn">A<br>&nbsp; |&lt;</div>
     <div class="btn">S<br>&nbsp; faster</div>
     <div class="btn">D<br>&nbsp; &gt;|</div>
+    <div class="btn">F<br>&nbsp; border</div>
 
     <hr>
 
@@ -65,9 +66,11 @@
     
     <script type="text/javascript">
 
-      var flipH
-
       document.body.onload = function () {
+
+        var BORDER_NONE = 'none'
+        var BORDER_DOTTED = 'dotted'
+        var BORDER_FILLED = 'filled'
 
         var queries = location.search.split('?')[1].split('&')
 
@@ -95,6 +98,8 @@
         var intervalTime = parseInt(localStorage.intervalTime) || 120
         var scaleX = parseInt(localStorage.scaleX) || 1
         var scaleY = parseInt(localStorage.scaleY) || 1
+        localStorage.border = localStorage.border || BORDER_NONE
+        setBorder()
 
         var image = new Image()
         image.onload = function() {
@@ -164,6 +169,10 @@
 
           } else if (event.key === 'r') {
             flipV()
+
+          } else if (event.key === 'f') {
+            toggleBorder()
+
           }
         })
 
@@ -200,7 +209,7 @@
           document.getElementById('intervalTime').innerText = 'interval: ' + intervalTime + ' ms'
         }
 
-        flipH = function () {
+        function flipH() {
           if (scaleX === -1) {
             scaleX = 1
           } else {
@@ -212,7 +221,7 @@
           update()
         }
 
-        flipV = function () {
+        function flipV() {
           if (scaleY === -1) {
             scaleY = 1
           } else {
@@ -222,6 +231,41 @@
           localStorage.scaleY = scaleY
 
           update()
+        }
+
+        function toggleBorder() {
+
+          var currentBorder = localStorage.border
+
+          switch (currentBorder) {
+            case BORDER_NONE:
+              localStorage.border = BORDER_DOTTED
+              break
+            case BORDER_DOTTED:
+              localStorage.border = BORDER_FILLED
+              break
+            case BORDER_FILLED:
+              localStorage.border = BORDER_NONE
+          }
+
+          setBorder()
+        }
+
+        function setBorder() {
+          switch (localStorage.border) {
+            case BORDER_NONE:
+              sprite.style.border = ''
+              sprite.style.backgroundColor = ''
+              break
+            case BORDER_DOTTED:
+              sprite.style.border = '1px dotted magenta'
+              sprite.style.backgroundColor = ''
+              break
+            case BORDER_FILLED:
+              sprite.style.border = '1px solid blue'
+              sprite.style.backgroundColor = 'rgba(0, 0, 255, 0.3)'
+              break
+          }
         }
       }
     </script>
